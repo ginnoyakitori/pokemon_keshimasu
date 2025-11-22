@@ -108,41 +108,56 @@ h1#app-title {
     margin-bottom: 20px;
 }
 
+/* ★ルールセクションのスタイル★ */
 .game-rules {
     text-align: left;
     background-color: #333;
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
+    border: 1px solid #FFD700; /* ルールセクションに枠線を追加 */
+}
+
+.game-rules h4 {
+    color: #FFA500;
+    margin-top: 0;
+}
+
+.game-rules p {
+    font-size: 0.9em;
+    margin-bottom: 10px;
 }
 
 .rule-list {
     padding-left: 20px;
     font-size: 0.9em;
     list-style-type: none;
+    padding: 0;
 }
 
 .rule-list li {
     margin-bottom: 5px;
 }
+/* ★ルールセクションのスタイルここまで★ */
 
-.mode-selection {
+
+/* ★ボタンの縦配置スタイル★ */
+.vertical-menu-container {
     display: flex;
-    justify-content: space-around;
-    gap: 10px;
-    margin-bottom: 20px;
+    flex-direction: column; /* 縦並びにする */
+    gap: 15px; /* ボタン間の間隔 */
+    margin: 20px auto;
 }
 
-.mode-card {
-    flex: 1;
-    background-color: #333;
-    padding: 10px;
-    border-radius: 8px;
-}
-
-.mode-card button {
+.menu-item-large, .menu-item {
     width: 100%;
+}
+
+.vertical-menu-container button {
+    width: 100%; /* ボタンを親要素いっぱいに広げる */
+    padding: 15px 20px; /* パディングを大きくして押しやすくする */
     margin: 0;
+    font-size: 1.1em;
 }
 
 .problem-count-display {
@@ -238,7 +253,7 @@ h1#app-title {
 }
 
 /* =========================================================================
-   問題制作画面 (create-puzzle-screen) ★画像に合わせて修正★
+   問題制作画面 (create-puzzle-screen) 
    ========================================================================= */
 
 #create-board {
@@ -246,13 +261,13 @@ h1#app-title {
     grid-template-columns: repeat(5, 1fr); 
     grid-template-rows: repeat(8, 1fr); 
     width: 300px; 
-    height: 480px; /* input要素に合わせるため、少し高めに設定 */
+    height: 480px; 
     margin: 20px auto;
     
-    /* ★画像に合わせた発光グリッドのスタイル★ */
-    border: 1px solid #FFD700; /* 細いゴールドの枠線 */
-    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); /* ゴールドの発光 */
-    background-color: #333; /* 暗い背景 */
+    /* 発光グリッドのスタイル */
+    border: 1px solid #FFD700; 
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.5); 
+    background-color: #333; 
     box-sizing: content-box;
 }
 
@@ -266,10 +281,10 @@ h1#app-title {
     font-size: 1.5em;
     font-weight: bold;
     
-    /* ★画像に合わせたセルのスタイル★ */
-    border: 1px solid #777; /* 各セルの枠線 */
-    background-color: #444; /* 各セルの背景色 */
-    color: #FFD700; /* 入力文字の色もゴールドに */
+    /* セルのスタイル */
+    border: 1px solid #777; 
+    background-color: #444; 
+    color: #FFD700; 
     text-transform: uppercase; 
     
     /* 発光効果 */
@@ -278,7 +293,7 @@ h1#app-title {
 }
 
 .create-cell-input:focus {
-    box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7); /* フォーカス時に発光 */
+    box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7); 
     border-color: #FFD700;
 }
 

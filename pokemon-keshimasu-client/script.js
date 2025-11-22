@@ -188,7 +188,8 @@ async function loadInitialData() {
  */
 function updateWelcomeMessage() {
     if (currentPlayer) {
-        dom.welcomeMessage.textContent = `${currentPlayer.nickname}さんのスコア: ${currentPlayer.pokemon_clears || 0}クリア！`;
+        // ★修正箇所★
+        dom.welcomeMessage.textContent = `${currentPlayer.nickname}さん、ようこそ！`;
     } else {
         dom.welcomeMessage.textContent = 'ゲストプレイヤーとして楽しめます。';
     }
