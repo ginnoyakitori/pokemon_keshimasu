@@ -1,18 +1,17 @@
-// keshimasu-server/server.js
 require('dotenv').config(); // .envファイルをロード
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const db = require('./db'); // データベース接続設定 (db.pool.connect()を使用するため、poolもエクスポートされている前提)
-const initializeDatabase = require('./init_db'); // DB初期化スクリプト
-const { hashPasscode, comparePasscode } = require('./utils/auth'); // 認証ヘルパー
+const db = require('./db'); 
+const initializeDatabase = require('./init_db'); 
+const { hashPasscode, comparePasscode } = require('./utils/auth');
+// scoreRoutes.js が不要になったためコメントアウト（または削除）
+// const scoreRoutes = require('./routes/scoreRoutes'); 
 
 const app = express();
-// 環境変数PORTを使用する (Renderの推奨対応)
 const PORT = process.env.PORT || 3000;
 
-// 辞書データを読み込む (ファイルパスと変数名をポケモン用に調整)
-// ★ 修正: COUNTRY_WORDS, CAPITAL_WORDS を POKEMON_WORDS に統一 ★
+// 辞書データを読み込む
 const POKEMON_WORDS = require('./data/pokemon_words.json');
 
 
@@ -27,8 +26,13 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
     app.use(express.json());
     
     // 静的ファイル配信 (keshimasu-clientディレクトリを想定)
-    app.use(express.static(path.join(__dirname, '..', 'keshimasu-client')));
+    // ★ 修正: 正しいクライアントフォルダ名 (pokemon-keshimasu-client) を使用 ★
+    app.use(express.static(path.join(__dirname, '..', 'pokemon-keshimasu-client')));
 
+    // ★ 修正 1: ルート ('/') へのGETリクエストが index.html を返すように明示的に設定 ★
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, '..', 'pokemon-keshimasu-client', 'index.html'));
+    });
 
     // --- API エンドポイント ---
 
@@ -46,8 +50,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
 
         try {
             // 1. 既存ユーザーのチェック
-            // ★ 修正: country_clears, capital_clears, cleared_country_ids, cleared_capital_ids 
-            //         を pokemon_clears, cleared_pokemon_ids に統一 (DBスキーマの変更が前提) ★
             const existingPlayer = await db.query(
                 'SELECT id, nickname, passcode_hash, pokemon_clears, cleared_pokemon_ids FROM players WHERE nickname = $1',
                 [trimmedNickname]
@@ -64,7 +66,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                         player: { 
                             id: player.id, 
                             nickname: player.nickname,
-                            // ★ 修正: ポケモンクリア数とクリアIDリストを返す ★
                             pokemon_clears: player.pokemon_clears,
                             cleared_pokemon_ids: player.cleared_pokemon_ids 
                         },
@@ -78,7 +79,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                 // 新規登録処理 (新規ユーザー)
                 const hashedPasscode = await hashPasscode(passcode);
                 
-                // ★ 修正: cleared_pokemon_ids に初期値 '[]'::jsonb を挿入 ★
                 const newPlayer = await db.query(
                     `INSERT INTO players (nickname, passcode_hash, cleared_pokemon_ids) 
                      VALUES ($1, $2, '[]'::jsonb) 
@@ -92,7 +92,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                     player: { 
                         id: player.id, 
                         nickname: player.nickname,
-                        // ★ 修正: ポケモンクリア数とクリアIDリストを返す ★
                         pokemon_clears: player.pokemon_clears,
                         cleared_pokemon_ids: player.cleared_pokemon_ids
                     },
@@ -114,7 +113,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
     app.get('/api/player/:id', async (req, res) => {
         try {
             const result = await db.query(
-                // ★ 修正: プレイヤー情報取得時にポケモンクリア情報を含める ★
                 'SELECT id, nickname, pokemon_clears, cleared_pokemon_ids FROM players WHERE id = $1',
                 [req.params.id]
             );
@@ -124,7 +122,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
             }
 
             const player = result.rows[0];
-            // JSONB型を使用しているため、pgドライバーが自動でオブジェクト/配列に変換している前提
             res.json({ player: player });
         } catch (err) {
             console.error('プレイヤー取得エラー:', err.message);
@@ -137,27 +134,22 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
      * プレイヤーのクリアスコアを+1し、クリアした問題IDを記録する
      */
     app.post('/api/score/update', async (req, res) => {
-        // ★ 修正: modeのチェックを 'pokemon' に固定 ★
         const { playerId, mode, puzzleId } = req.body;
         
         const clearCountColumn = 'pokemon_clears';
         const clearedIdsColumn = 'cleared_pokemon_ids';
         const puzzleIdInt = parseInt(puzzleId);
         
-        // modeチェックは 'pokemon' のみ許可
         if (!playerId || mode !== 'pokemon' || isNaN(puzzleIdInt)) {
             return res.status(400).json({ message: '無効なリクエストです。' });
         }
         
-        // トランザクションを開始し、原子性を確保
         const client = await db.pool.connect(); 
         try {
             await client.query('BEGIN');
             
-            // 1. 現在のクリア済みIDリストを取得し、排他ロックをかける
-            // JSONB型を想定
             const checkResult = await client.query(
-                `SELECT ${clearCountColumn}, ${clearedIdsColumn} FROM players WHERE id = $1 FOR UPDATE`, // FOR UPDATEでロック
+                `SELECT ${clearCountColumn}, ${clearedIdsColumn} FROM players WHERE id = $1 FOR UPDATE`, 
                 [playerId]
             );
             
@@ -168,14 +160,11 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
             
             const currentRow = checkResult.rows[0];
             const currentScore = currentRow[clearCountColumn];
-            // JSONB型の場合、pgドライバーは自動でJavaScriptの配列/オブジェクトに変換する
             let clearedIds = currentRow[clearedIdsColumn] || []; 
             
-            // 配列の要素を数値に統一
             clearedIds = clearedIds.map(id => parseInt(id)); 
 
             if (clearedIds.includes(puzzleIdInt)) {
-                // 既にクリア済みの場合、スコアは更新せず、現在のスコアを返す
                 await client.query('ROLLBACK');
                 return res.status(200).json({ 
                     newScore: currentScore, 
@@ -183,14 +172,10 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                 });
             }
 
-            // 2. 新しいIDを追加し、JSON文字列に変換
             clearedIds.push(puzzleIdInt);
-            // JSONBカラムに挿入するため、JSON.stringifyで文字列に戻す
             const newClearedIdsJson = JSON.stringify(clearedIds);
 
-            // 3. スコアをインクリメントし、クリア済みIDのJSON文字列を更新
             const updateResult = await client.query(
-                // PostgreSQLでは、カラム名を文字列展開し、値のインクリメントはDB側で行う
                 `UPDATE players SET ${clearCountColumn} = ${clearCountColumn} + 1, ${clearedIdsColumn} = $2 WHERE id = $1 RETURNING ${clearCountColumn} AS newscore`,
                 [playerId, newClearedIdsJson]
             );
@@ -201,7 +186,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                 return res.status(404).json({ message: 'プレイヤーが見つかりません。' });
             }
 
-            // RETURNING句で newscore とエイリアスを付けたため、.newscore でアクセス
             res.json({ newScore: updateResult.rows[0].newscore, message: 'スコアを更新しました。' });
         } catch (err) {
             await client.query('ROLLBACK');
@@ -211,27 +195,51 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
             client.release();
         }
     });
+    
+    // ★ 修正 2: GET /api/score/leaderboard ルートを追加 ★
+    /**
+     * GET /api/score/leaderboard
+     * ランキングデータを取得する (GET /api/rankings/pokemon と同じ機能を提供)
+     */
+    app.get('/api/score/leaderboard', async (req, res) => {
+        const column = 'pokemon_clears';
+
+        try {
+            const result = await db.query(
+                `SELECT nickname, ${column} AS score FROM players ORDER BY score DESC, created_at ASC LIMIT 100`
+            );
+            
+            const rankings = result.rows.map((row, index) => ({
+                rank: index + 1,
+                nickname: row.nickname,
+                score: row.score
+            }));
+
+            res.json(rankings);
+        } catch (err) {
+            console.error('リーダーボード取得エラー:', err.message);
+            res.status(500).json({ message: 'サーバーエラーによりランキングを取得できませんでした。' });
+        }
+    });
+
 
     /**
      * GET /api/puzzles/:mode
-     * 指定されたモードの問題リストを取得する (古い登録順)
+     * 指定されたモードの問題リストを取得する
      */
     app.get('/api/puzzles/:mode', async (req, res) => {
         const { mode } = req.params;
-        const { playerId } = req.query; // playerIdをクエリパラメータから取得
+        const { playerId } = req.query; 
         
-        // ★ 修正: modeチェックを 'pokemon' のみ許可 ★
         if (mode !== 'pokemon') {
             return res.status(400).json({ message: '無効なモードです。' });
         }
         
         let clearedIds = [];
-        let playerIdentified = false; // プレイヤーが特定できたかを示すフラグ
+        let playerIdentified = false; 
         
-        // 1. プレイヤーIDがあれば、クリア済みIDを取得
         if (playerId) {
             try {
-                // ★ 修正: cleared_pokemon_ids を取得 ★
                 const clearedIdsColumn = 'cleared_pokemon_ids';
                 const playerResult = await db.query(
                     `SELECT ${clearedIdsColumn} FROM players WHERE id = $1`,
@@ -240,28 +248,23 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
 
                 if (playerResult.rows.length > 0) {
                     const clearedIdsData = playerResult.rows[0][clearedIdsColumn];
-                    // JSONB型の場合、clearedIdsDataは既に配列であるため、その値をセット
                     clearedIds = clearedIdsData || []; 
-                    playerIdentified = true; // プレイヤー特定成功
+                    playerIdentified = true; 
                 }
             } catch (err) {
                 console.error('クリア済みID取得エラー:', err.message);
-                // エラーが発生した場合も、問題リストの取得は続行（clearedIdsは[]のまま）
             }
         }
 
-        // 2. 問題リスト全体を取得 (フィルタリングはクライアントに任せるため、ここでは全ての対象問題を取得)
         try {
-            // modeに一致する全ての問題を取得する (modeは'pokemon'で固定)
             const sql = 'SELECT id, board_data AS data, creator FROM puzzles WHERE mode = $1 ORDER BY created_at ASC';
             
             const result = await db.query(sql, [mode]);
             
-            // 3. レスポンスにすべての情報を含めて返す
             res.json({ 
                 puzzles: result.rows, 
                 cleared_ids: clearedIds,
-                player_identified: playerIdentified, // フラグをクライアントに返す
+                player_identified: playerIdentified, 
                 message: playerIdentified ? '問題リストと最新のクリア済みIDを返却しました。' : 'ゲスト/未ログイン用の全問題リストを返却しました。'
             });
 
@@ -279,17 +282,14 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         const { type } = req.params;
         let column;
 
-        // ★ 修正: 'country', 'capital', 'total' を 'pokemon' に統一 ★
         if (type === 'pokemon') column = 'pokemon_clears';
         else return res.status(400).json({ message: '無効なランキングタイプです。' });
 
         try {
-            // SQLクエリを一行で記述し、不正なスペースの混入を防ぐ
             const result = await db.query(
                 `SELECT nickname, ${column} AS score FROM players ORDER BY score DESC, created_at ASC LIMIT 100`
             );
             
-            // 取得したデータに順位(rank)を付与して返す
             const rankings = result.rows.map((row, index) => ({
                 rank: index + 1,
                 nickname: row.nickname,
@@ -309,7 +309,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
      */
     app.get('/api/words/:mode', (req, res) => {
         const { mode } = req.params;
-        // ★ 修正: 'country', 'capital' を 'pokemon' に統一 ★
         if (mode === 'pokemon') {
             return res.json(POKEMON_WORDS);
         }
@@ -321,16 +320,13 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
      * ユーザーが制作した問題をデータベースに登録する
      */
     app.post('/api/puzzles', async (req, res) => {
-        // modeは常に 'pokemon' になるが、念のためバリデーションを維持
         const { mode, boardData, creator } = req.body;
         
         if (!mode || !boardData || !creator) {
             return res.status(400).json({ message: '問題のデータが不完全です。' });
         }
         
-        // ★ 修正: modeは常に 'pokemon' で挿入されることを想定 ★
         try {
-            // boardData はオブジェクトとして渡されるが、DBのJSONBカラムに格納するために文字列化
             const newPuzzle = await db.query(
                 'INSERT INTO puzzles (mode, board_data, creator) VALUES ($1, $2, $3) RETURNING id, creator',
                 [mode, JSON.stringify(boardData), creator]
