@@ -6,15 +6,15 @@
 const API_BASE_URL = 'https://pokemon-keshimasu.onrender.com/api'; 
 const BOARD_ROWS = 8;
 const BOARD_COLS = 5;
-const GAME_MODE = 'pokemon'; // 現在のモードを固定
+const GAME_MODE = 'pokemon'; 
 const LOCAL_STORAGE_KEY = 'pokemonKeshimasuPlayer';
 
 // プレイヤー情報とゲーム状態
 let currentPlayer = null;
-let currentPuzzles = []; // サーバーから取得した全問題リスト (created_at ASCでソート済み)
+let currentPuzzles = []; 
 let currentPuzzleIndex = 0;
 let clearedPuzzleIds = [];
-let availableWords = new Set(); // 判定に使うポケモン名リスト
+let availableWords = new Set(); 
 
 // DOM要素のキャッシュ
 const dom = {};
@@ -136,9 +136,7 @@ function setPlayer(player) {
         clearedPuzzleIds = [];
     }
     
-    // UIを更新してホーム画面へ
     updateWelcomeMessage();
-    // showScreen('home-screen'); // loadInitialDataの最後で呼ばれる
 }
 
 /**
@@ -239,20 +237,46 @@ function startPokemonMode() {
 }
 
 /**
- * ゲーム盤面を初期化する (ダミー)
+ * ゲーム盤面を初期化する
+ * @param {string} boardData - JSON形式の盤面データ
+ * @param {number} puzzleId - 問題ID
  */
-function initializeGameBoard(boardData) {
+function initializeGameBoard(boardData, puzzleId) {
     dom.board.innerHTML = '';
-    // ここにboardData (JSON形式) を使って実際のマスを生成するロジックが必要です
-    // 例として、ダミーのセルを生成
-    for (let i = 0; i < BOARD_ROWS * BOARD_COLS; i++) {
-        const cell = document.createElement('div');
-        cell.className = 'board-cell';
-        cell.textContent = String.fromCharCode(65 + (i % 26)); 
-        dom.board.appendChild(cell);
-        
-        // 仮のクリックイベントリスナー
-        cell.addEventListener('click', handleCellClick);
+    
+    // 実際のボードデータを使用
+    let currentBoardState;
+    try {
+        currentBoardState = JSON.parse(boardData);
+    } catch {
+        // データがない、またはパースエラーの場合のフォールバック
+        currentBoardState = [];
+        for(let r=0; r<BOARD_ROWS; r++) {
+             // ダミーデータを生成 (例: [['A','B','C',...], [...]])
+             currentBoardState.push(Array(BOARD_COLS).fill('F'));
+        }
+    }
+
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'board-cell';
+            
+            // 盤面の文字を設定 
+            cell.textContent = currentBoardState[r][c]; 
+            
+            // ★表示制限のロジック: r < 3 (上3段: 0, 1, 2行目) は隠す★
+            if (r < (BOARD_ROWS - 5)) { 
+                cell.classList.add('hidden-cell');
+            }
+            
+            // セルの位置情報をデータ属性として保持
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            
+            cell.addEventListener('click', handleCellClick);
+            dom.board.appendChild(cell);
+        }
     }
     // 実際にゲームロジックで使う変数（盤面状態、選択状態）をリセット
 }
@@ -262,6 +286,8 @@ function initializeGameBoard(boardData) {
  */
 function handleCellClick(event) {
     const cell = event.target;
+    // hidden-cellはクリックできないようにCSSで設定されているため、ここでは主に下5段のセルを処理
+    
     cell.classList.toggle('selected');
     dom.eraseButton.disabled = document.querySelectorAll('.selected').length === 0;
 }
@@ -280,7 +306,7 @@ function eraseSelected() {
     
     // スコア更新APIを呼び出す（デモ目的で即時呼び出し）
     if (currentPlayer) {
-        submitScore(currentPuzzles[currentPuzzleIndex].id);
+        // submitScore(currentPuzzles[currentPuzzleIndex].id); // 実際のゲームではクリア時に実行
     }
 }
 
@@ -315,8 +341,8 @@ async function submitScore(puzzleId) {
             clearedPuzzleIds.push(puzzleId);
         }
         
-        setPlayer(currentPlayer); // ローカルストレージも更新
-        loadInitialData(); // 問題リストを再ロードしてホーム画面を更新
+        setPlayer(currentPlayer); 
+        loadInitialData(); 
         
     } catch (error) {
         console.error('スコア送信エラー:', error);
@@ -381,14 +407,52 @@ function showWordListScreen() {
 }
 
 /**
- * 問題制作画面を表示 (ダミー)
+ * 問題制作画面を表示
  */
 function showCreatePuzzleScreen() {
     showScreen('create-puzzle-screen');
-    dom.createStatus.textContent = '残り40マスに入力が必要です。';
+    
+    // ★問題制作ボードの初期化ロジック★
     dom.createBoard.innerHTML = ''; 
-    // 制作ボードの初期化ロジック (input要素の生成など) が必要
+    
+    for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'create-cell-input';
+            input.maxLength = 1; 
+            
+            // 入力監視イベントを設定
+            input.addEventListener('input', updateCreateStatus);
+            
+            dom.createBoard.appendChild(input);
+        }
+    }
+    
+    updateCreateStatus(); // 初期状態のステータスを表示
 }
+
+/**
+ * 問題制作時の入力状態を更新する
+ */
+function updateCreateStatus() {
+    const inputs = document.querySelectorAll('#create-puzzle-screen .create-cell-input');
+    let filledCount = 0;
+    
+    inputs.forEach(input => {
+        if (input.value.trim().length === 1) {
+            filledCount++;
+        }
+    });
+
+    const totalCells = BOARD_ROWS * BOARD_COLS;
+    const remaining = totalCells - filledCount;
+    dom.createStatus.textContent = `残り${remaining}マスに入力が必要です。`;
+    
+    // 全て埋まったら完了ボタンを有効化
+    document.getElementById('btn-input-complete').disabled = remaining > 0;
+}
+
 
 /**
  * 問題制作完了時に実行 (ダミー)
@@ -399,8 +463,8 @@ function completeCreation() {
         return;
     }
     
+    // ここで inputs からデータを集めてJSON化し、APIで登録する
     alert('問題制作完了と登録処理を実行します (ロジック未実装)');
-    // 実際には、ボードデータを取得しAPIで登録する処理が続く
     backToHome();
 }
 
@@ -408,7 +472,7 @@ function completeCreation() {
  * ホーム画面に戻る
  */
 function backToHome() {
-    loadInitialData(); // データ再ロードを兼ねてホームに戻る
+    loadInitialData(); 
 }
 
 
@@ -417,29 +481,23 @@ function backToHome() {
 // =========================================================================
 
 /**
- * DOM要素のキャッシュと初期ロード
+ * DOM要素のキャッシュ
  */
 function cacheDOMElements() {
-    // 認証
     dom.nicknameInput = document.getElementById('nickname-input');
     dom.passcodeInput = document.getElementById('passcode-input');
-    // ホーム
     dom.welcomeMessage = document.getElementById('welcome-message');
     dom.problemCountDisplay = document.getElementById('country-problem-count');
-    // ゲーム
     dom.board = document.getElementById('board');
     dom.currentGameTitle = document.getElementById('current-game-title');
     dom.creatorDisplay = document.getElementById('creator-display');
     dom.usedWordsDisplay = document.getElementById('used-words-display');
-    dom.eraseButton = document.getElementById('erase-button'); // 消去ボタンもキャッシュ
+    dom.eraseButton = document.getElementById('erase-button'); 
     dom.problemNumberDisplay = document.getElementById('problem-number-display');
-    // 作成
     dom.createBoard = document.getElementById('create-board');
     dom.createStatus = document.getElementById('create-status');
-    // ランキング
     dom.rankingListContainer = document.getElementById('ranking-list-container');
     dom.rankingNicknameDisplay = document.getElementById('ranking-nickname-display');
-    // ワードリスト
     dom.wordListModeDisplay = document.getElementById('word-list-mode-display');
     dom.wordListContent = document.getElementById('word-list-content');
 }
@@ -448,28 +506,23 @@ function cacheDOMElements() {
  * イベントリスナーの設定
  */
 function setupEventListeners() {
-    // 認証画面
     document.getElementById('login-btn').addEventListener('click', attemptLogin);
     document.getElementById('signup-btn').addEventListener('click', attemptRegister);
     document.getElementById('guest-play-btn').addEventListener('click', playAsGuest);
 
-    // ホーム画面
     document.getElementById('btn-country-mode').addEventListener('click', startPokemonMode);
     document.getElementById('btn-create-mode').addEventListener('click', showCreatePuzzleScreen);
     document.getElementById('btn-ranking').addEventListener('click', showRankingScreen);
     document.getElementById('btn-word-list').addEventListener('click', showWordListScreen);
     document.getElementById('btn-logout').addEventListener('click', logout);
 
-    // メインゲーム画面
     document.getElementById('erase-button').addEventListener('click', eraseSelected);
     document.getElementById('reset-button').addEventListener('click', resetGame);
     document.getElementById('btn-back-to-home').addEventListener('click', backToHome);
     
-    // 作成画面
     document.getElementById('btn-input-complete').addEventListener('click', completeCreation);
     document.getElementById('btn-create-back').addEventListener('click', backToHome);
 
-    // ランキング/ワードリスト画面
     document.getElementById('btn-ranking-back').addEventListener('click', backToHome);
     document.getElementById('btn-word-list-back').addEventListener('click', backToHome);
 }
@@ -479,17 +532,16 @@ function setupEventListeners() {
  */
 function init() {
     cacheDOMElements();
-    setupEventListeners(); // ページの初期化前にイベントをバインド
+    setupEventListeners(); 
 
     const storedPlayer = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (storedPlayer) {
         const player = JSON.parse(storedPlayer);
         
-        // サーバーから最新情報を取得
         fetchAPI(`/player/${player.id}`)
             .then(result => {
                 setPlayer(result.player);
-                loadInitialData(); // 成功したらデータロード
+                loadInitialData(); 
             })
             .catch(error => {
                 console.error('プレイヤー情報再ロードエラー:', error);
@@ -502,5 +554,4 @@ function init() {
     }
 }
 
-// ページが完全にロードされたら初期化を実行
 document.addEventListener('DOMContentLoaded', init);
