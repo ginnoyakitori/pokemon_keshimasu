@@ -11,7 +11,7 @@ const LOCAL_STORAGE_KEY = 'pokemonKeshimasuPlayer';
 
 // プレイヤー情報とゲーム状態
 let currentPlayer = null;
-let currentPuzzles = []; // サーバーから取得した全問題リスト
+let currentPuzzles = []; // サーバーから取得した全問題リスト (created_at ASCでソート済み)
 let currentPuzzleIndex = 0;
 let clearedPuzzleIds = [];
 let availableWords = new Set(); // 判定に使うポケモン名リスト
@@ -100,14 +100,14 @@ async function attemptAuth(isNewUser) {
 }
 
 /**
- * ログインを試行する (login-btnが使用)
+ * ログインを試行する
  */
 function attemptLogin() {
     attemptAuth(false);
 }
 
 /**
- * 新規登録を試行する (signup-btnが使用)
+ * 新規登録を試行する
  */
 function attemptRegister() {
     attemptAuth(true);
@@ -138,7 +138,7 @@ function setPlayer(player) {
     
     // UIを更新してホーム画面へ
     updateWelcomeMessage();
-    showScreen('home-screen');
+    // showScreen('home-screen'); // loadInitialDataの最後で呼ばれる
 }
 
 /**
@@ -169,8 +169,12 @@ async function loadInitialData() {
         }
         
         // 問題数を更新
-        dom.problemCountDisplay.textContent = `未クリア問題数: ${currentPuzzles.length - clearedPuzzleIds.length}問 (全 ${currentPuzzles.length}問)`;
+        const totalPuzzles = currentPuzzles.length;
+        const unclearedCount = totalPuzzles - clearedPuzzleIds.length;
         
+        dom.problemCountDisplay.textContent = 
+            `未クリア問題数: ${unclearedCount}問 (全 ${totalPuzzles}問)`;
+
         updateWelcomeMessage();
         showScreen('home-screen');
 
@@ -194,30 +198,40 @@ function updateWelcomeMessage() {
 
 
 // =========================================================================
-// 🎮 ゲームプレイロジック (ダミー/プレースホルダー)
+// 🎮 ゲームプレイロジック
 // =========================================================================
 
 /**
  * ポケモンケシマスを開始する
  */
 function startPokemonMode() {
-    // 未クリアの問題を探す
+    // 1. 問題総数をチェック
+    if (currentPuzzles.length === 0) {
+        alert('現在、問題がありません。誰かが新しい問題を作るまでお待ちください！');
+        showScreen('home-screen'); 
+        return;
+    }
+
+    // 2. 未クリアの問題をフィルタリング (currentPuzzlesはcreated_at ASCでソート済み)
     const unclearedPuzzles = currentPuzzles.filter(p => !clearedPuzzleIds.includes(p.id));
     
+    // 3. 全クリアチェック
     if (unclearedPuzzles.length === 0) {
         alert('全てのポケモンケシマス問題をクリアしました！新しい問題が追加されるまでお待ちください。');
         return;
     }
 
-    // 最も古い未クリア問題を取得 (サーバーがcreated_at ASCで返している前提)
+    // 4. 最も古い未クリア問題を取得 (配列の0番目が最も古い)
     const nextPuzzle = unclearedPuzzles[0];
+    
+    // 5. 全問題リスト内でのインデックスを取得 (表示用)
     currentPuzzleIndex = currentPuzzles.findIndex(p => p.id === nextPuzzle.id);
 
-    // ゲーム盤面を初期化
+    // 6. ゲーム盤面を初期化
     initializeGameBoard(nextPuzzle.data, nextPuzzle.id); 
 
     // UI更新
-    dom.currentGameTitle.textContent = `第 ${currentPuzzleIndex + 1} 問`;
+    dom.problemNumberDisplay.textContent = `第 ${currentPuzzleIndex + 1} 問`;
     dom.creatorDisplay.textContent = `制作者: ${nextPuzzle.creator || '名無し'}`;
     dom.usedWordsDisplay.textContent = 'なし';
     
@@ -229,31 +243,45 @@ function startPokemonMode() {
  */
 function initializeGameBoard(boardData) {
     dom.board.innerHTML = '';
-    // ダミーのセル生成（実際はboardDataを使って生成するロジックが必要）
+    // ここにboardData (JSON形式) を使って実際のマスを生成するロジックが必要です
+    // 例として、ダミーのセルを生成
     for (let i = 0; i < BOARD_ROWS * BOARD_COLS; i++) {
         const cell = document.createElement('div');
         cell.className = 'board-cell';
-        cell.textContent = String.fromCharCode(65 + (i % 26)); // A, B, C... (ダミー文字)
+        cell.textContent = String.fromCharCode(65 + (i % 26)); 
         dom.board.appendChild(cell);
+        
+        // 仮のクリックイベントリスナー
+        cell.addEventListener('click', handleCellClick);
     }
-    // 実際にゲームロジックで使う変数をリセット (例: currentBoardState = boardData)
-    // selection = [];
-    // usedWords = [];
+    // 実際にゲームロジックで使う変数（盤面状態、選択状態）をリセット
+}
+
+/**
+ * セルがクリックされた時の処理 (ダミー)
+ */
+function handleCellClick(event) {
+    const cell = event.target;
+    cell.classList.toggle('selected');
+    dom.eraseButton.disabled = document.querySelectorAll('.selected').length === 0;
 }
 
 /**
  * 選択された文字を消去する (ダミー)
  */
 function eraseSelected() {
+    const selectedCells = document.querySelectorAll('.selected');
+    if (selectedCells.length < 2) {
+        alert('2文字以上選択してください。');
+        return;
+    }
+    
     alert('消去処理を実行します (ロジック未実装)');
-    // 1. 選択が有効かチェック
-    // 2. 選択された文字列が availableWords に存在するかチェック
-    // 3. 存在し、未クリアなら、スコア更新APIを呼び出す
+    
+    // スコア更新APIを呼び出す（デモ目的で即時呼び出し）
     if (currentPlayer) {
         submitScore(currentPuzzles[currentPuzzleIndex].id);
     }
-    // 4. 盤面を更新
-    // 5. クリア判定
 }
 
 /**
@@ -266,7 +294,7 @@ function resetGame() {
 }
 
 /**
- * クリア時にスコアをサーバーに送信する (ダミー)
+ * クリア時にスコアをサーバーに送信する
  * @param {number} puzzleId - クリアした問題のID
  */
 async function submitScore(puzzleId) {
@@ -288,6 +316,7 @@ async function submitScore(puzzleId) {
         }
         
         setPlayer(currentPlayer); // ローカルストレージも更新
+        loadInitialData(); // 問題リストを再ロードしてホーム画面を更新
         
     } catch (error) {
         console.error('スコア送信エラー:', error);
@@ -307,10 +336,8 @@ async function showRankingScreen() {
     dom.rankingListContainer.innerHTML = 'ランキングをロード中...';
     
     try {
-        // GET /api/rankings/:type ルート (server.jsで定義済み)
         const rankings = await fetchAPI(`/rankings/${GAME_MODE}`); 
         
-        // 自分のスコア表示
         if (currentPlayer) {
             const playerRank = rankings.find(r => r.nickname === currentPlayer.nickname);
             dom.rankingNicknameDisplay.textContent = `あなたの記録: ${playerRank ? `${playerRank.rank}位 (${playerRank.score}クリア)` : `未ランクイン (${currentPlayer.pokemon_clears || 0}クリア)`}`;
@@ -318,7 +345,6 @@ async function showRankingScreen() {
             dom.rankingNicknameDisplay.textContent = 'あなたの記録: ゲスト (スコア非保存)';
         }
 
-        // ランキングリストの生成
         const html = `
             <table>
                 <thead><tr><th>順位</th><th>ニックネーム</th><th>スコア</th></tr></thead>
@@ -360,7 +386,7 @@ function showWordListScreen() {
 function showCreatePuzzleScreen() {
     showScreen('create-puzzle-screen');
     dom.createStatus.textContent = '残り40マスに入力が必要です。';
-    dom.createBoard.innerHTML = ''; // ボードをリセット
+    dom.createBoard.innerHTML = ''; 
     // 制作ボードの初期化ロジック (input要素の生成など) が必要
 }
 
@@ -368,10 +394,13 @@ function showCreatePuzzleScreen() {
  * 問題制作完了時に実行 (ダミー)
  */
 function completeCreation() {
+    if (!currentPlayer) {
+        alert('ログインして問題を登録してください。');
+        return;
+    }
+    
     alert('問題制作完了と登録処理を実行します (ロジック未実装)');
-    // 1. ボードデータを取得し、バリデーション
-    // 2. APIで /api/puzzles に登録
-    // 3. 成功後、ホーム画面に戻る
+    // 実際には、ボードデータを取得しAPIで登録する処理が続く
     backToHome();
 }
 
@@ -379,7 +408,7 @@ function completeCreation() {
  * ホーム画面に戻る
  */
 function backToHome() {
-    showScreen('home-screen');
+    loadInitialData(); // データ再ロードを兼ねてホームに戻る
 }
 
 
@@ -402,6 +431,8 @@ function cacheDOMElements() {
     dom.currentGameTitle = document.getElementById('current-game-title');
     dom.creatorDisplay = document.getElementById('creator-display');
     dom.usedWordsDisplay = document.getElementById('used-words-display');
+    dom.eraseButton = document.getElementById('erase-button'); // 消去ボタンもキャッシュ
+    dom.problemNumberDisplay = document.getElementById('problem-number-display');
     // 作成
     dom.createBoard = document.getElementById('create-board');
     dom.createStatus = document.getElementById('create-status');
@@ -411,34 +442,6 @@ function cacheDOMElements() {
     // ワードリスト
     dom.wordListModeDisplay = document.getElementById('word-list-mode-display');
     dom.wordListContent = document.getElementById('word-list-content');
-}
-
-/**
- * ページロード後の初期化
- */
-function init() {
-    cacheDOMElements();
-
-    const storedPlayer = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (storedPlayer) {
-        // プレイヤー情報があれば再ロード
-        const player = JSON.parse(storedPlayer);
-        
-        // サーバーから最新情報を取得し、ホームへ
-        fetchAPI(`/player/${player.id}`)
-            .then(result => {
-                setPlayer(result.player);
-                loadInitialData();
-            })
-            .catch(error => {
-                console.error('プレイヤー情報再ロードエラー:', error);
-                setPlayer(null); // エラー時はゲスト扱い/認証画面へ
-                showScreen('auth-screen');
-            });
-
-    } else {
-        showScreen('auth-screen');
-    }
 }
 
 /**
@@ -469,20 +472,35 @@ function setupEventListeners() {
     // ランキング/ワードリスト画面
     document.getElementById('btn-ranking-back').addEventListener('click', backToHome);
     document.getElementById('btn-word-list-back').addEventListener('click', backToHome);
-
-    // 盤面セルクリックイベント (ダミー)
-    // dom.board.addEventListener('click', handleCellClick); 
 }
 
-// ページが完全にロードされたら初期化とイベント設定を実行
-document.addEventListener('DOMContentLoaded', () => {
-    // setupEventListeners() を呼び出す前に init() を呼び出すことで、DOM要素を確実にキャッシュ
-    // ただし、init() の中で setPlayer() を通じて showScreen() が呼ばれるため、
-    // ここで setupEventListeners() を呼び出すのが安全
-    init();
-    setupEventListeners();
-});
+/**
+ * ページロード後の初期化
+ */
+function init() {
+    cacheDOMElements();
+    setupEventListeners(); // ページの初期化前にイベントをバインド
 
-// =========================================================================
-// (他のゲームロジック関数が続く...)
-// =========================================================================
+    const storedPlayer = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (storedPlayer) {
+        const player = JSON.parse(storedPlayer);
+        
+        // サーバーから最新情報を取得
+        fetchAPI(`/player/${player.id}`)
+            .then(result => {
+                setPlayer(result.player);
+                loadInitialData(); // 成功したらデータロード
+            })
+            .catch(error => {
+                console.error('プレイヤー情報再ロードエラー:', error);
+                setPlayer(null); 
+                showScreen('auth-screen');
+            });
+
+    } else {
+        showScreen('auth-screen');
+    }
+}
+
+// ページが完全にロードされたら初期化を実行
+document.addEventListener('DOMContentLoaded', init);
