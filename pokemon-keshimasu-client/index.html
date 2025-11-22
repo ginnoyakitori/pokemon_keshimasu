@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ポケモンケシマス</title> <link rel="stylesheet" href="style.css">
+    <title>ポケモンケシマス</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="app-container">
-        <h1 id="app-title">ポケモンケシマス</h1> <section id="auth-screen" style="display: block;">
-            <div id="login-screen" class="auth-screen screen">
+        <h1 id="app-title">ポケモンケシマス</h1>
+        
+        <section id="auth-screen" class="screen active-screen">
+            <div id="login-screen" class="auth-screen">
                 <div class="auth-form">
-                    <h2>ポケモンケシマス</h2> <input type="text" id="nickname-input" placeholder="ニックネーム (20文字まで)" maxlength="20" autocomplete="off">
-                    
+                    <h2>ポケモンケシマス</h2>
+                    <input type="text" id="nickname-input" placeholder="ニックネーム (20文字まで)" maxlength="20" autocomplete="off">
                     <input type="password" id="passcode-input" placeholder="パスコード (認証用)">
 
                     <div class="auth-button-group">
@@ -24,17 +27,16 @@
             </div>
         </section>
 
-        <div id="home-screen" class="screen" style="display:none;">
-            
-            <p id="welcome-message" style="font-weight: bold; font-size: 1.1em; color: #FFD700; margin-bottom: 20px;">
-            </p>
+        <div id="home-screen" class="screen">
+            <p id="welcome-message" class="welcome-message-text"></p>
             
             <div class="game-rules">
                 <h3>ゲームルール</h3>
                 <p>盤面の全ての文字を消去してクリアを目指すパズルゲームです。</p>
                 
                 <ul class="rule-list">
-                    <li>消去条件: 盤面上の文字を、一直線（縦または横）に選択し、その文字列を**ポケモン名**にすることで消去できます。</li> <li>ワイルドカード: 文字「F」は任意のカタカナ一文字として使用可能です。</li>
+                    <li>消去条件: 盤面上の文字を、一直線（縦または横）に選択し、その文字列を**ポケモン名**にすることで消去できます。</li>
+                    <li>ワイルドカード: 文字「F」は任意のカタカナ一文字として使用可能です。</li>
                     <li>制限: 同じワードは2回以上使えません。</li>
                     <li>重力: 文字を消去すると、その上の文字が下に落下します。</li>
                     <li>出題順: 未クリアの問題のうち、登録日時が古いものから出題されます。</li>
@@ -43,32 +45,33 @@
             </div>
             <div class="mode-selection">
                 <div class="mode-card">
-                    <button id="btn-country-mode">ポケモンケシマスく</button> <span id="country-problem-count" class="problem-count-display">問題数: 0問</span>
+                    <button id="btn-country-mode">ポケモンケシマス</button>
+                    <span id="country-problem-count" class="problem-count-display">問題数: 0問</span>
                 </div>
                 
                 <div class="mode-card">
-                    <h2></h2>
                     <button id="btn-create-mode">問題を作る</button>
                 </div>
 
                 <div class="mode-card">
-                    <h2></h2>
                     <button id="btn-ranking">ランキング</button>
                 </div>
             </div>
 
-            <button id="btn-word-list" class="secondary-btn" style="margin-top: 20px;">
-                利用可能なポケモン名一覧 </button>
+            <button id="btn-word-list" class="secondary-btn margin-top-20">
+                利用可能なポケモン名一覧 
+            </button>
             
             <div class="control-panel">
-                <button id="btn-logout" class="secondary-btn" style="margin-top: 20px;">ログアウト</button>
+                <button id="btn-logout" class="secondary-btn margin-top-20">ログアウト</button>
             </div>
             
         </div>
 
-        <div id="main-game-screen" class="screen" style="display:none;">
+        <div id="main-game-screen" class="screen">
             <div class="game-header">
-                <h2 id="current-game-title">ポケモンケシマス</h2> <div class="game-info">
+                <h2 id="current-game-title">ポケモンケシマス</h2>
+                <div class="game-info">
                     <span id="problem-number-display" class="info-tag">第 1 問</span>
                     <span id="creator-display" class="info-tag">制作者: 銀の焼き鳥</span>
                 </div>
@@ -88,12 +91,13 @@
             </div>
         </div>
         
-        <div id="create-puzzle-screen" class="screen" style="display:none;">
+        <div id="create-puzzle-screen" class="screen">
             <h2>問題制作モード</h2>
             <p>8x5マス全てに、カタカナ一文字か「F」（ワイルドカード）を入力してください。</p>
             
             <div class="create-controls">
-                <p>判定モード: **ポケモン名**</p> <button id="btn-input-complete" disabled>入力完了 & 解答開始</button>
+                <p>判定モード: **ポケモン名**</p>
+                <button id="btn-input-complete" disabled>入力完了 & 解答開始</button>
             </div>
             
             <p id="create-status">残り40マスに入力が必要です。</p>
@@ -103,7 +107,7 @@
             <button id="btn-create-back" class="secondary-btn">ホームに戻る</button>
         </div>
 
-        <div id="ranking-screen" class="screen" style="display:none;">
+        <div id="ranking-screen" class="screen">
             <h2>ランキング</h2>
             <p id="ranking-nickname-display">あなたの記録: ゲスト</p>
             <div id="ranking-list-container">
@@ -111,11 +115,14 @@
             <button id="btn-ranking-back" class="secondary-btn">ホームに戻る</button>
         </div>
 
-        <div id="word-list-screen" class="screen" style="display:none;">
-            <h2>利用可能なポケモン名一覧</h2> <p class="word-list-note">（サーバーから取得したポケモン名が表示されます）</p> <p id="word-list-mode-display" style="font-weight: bold;">ポケモン名リスト</p> <div id="word-list-content" class="word-list-grid">
+        <div id="word-list-screen" class="screen">
+            <h2>利用可能なポケモン名一覧</h2>
+            <p class="word-list-note">（サーバーから取得したポケモン名が表示されます）</p>
+            <p id="word-list-mode-display" class="word-list-mode-text">ポケモン名リスト</p>
+            <div id="word-list-content" class="word-list-grid">
             </div>
 
-            <button id="btn-word-list-back" class="secondary-btn" style="margin-top: 20px;">ホームに戻る</button>
+            <button id="btn-word-list-back" class="secondary-btn margin-top-20">ホームに戻る</button>
         </div>
         
     </div>
