@@ -46,7 +46,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
             // 1. 既存ユーザーのチェック
             // DBの cleared_ids カラムは JSONB型（PostgreSQL）で保存されている前提
             const existingPlayer = await db.query(
-                'SELECT id, nickname, passcode_hash, pokemon_clears, capital_clears, cleared_pokemon_ids, cleared_capital_ids FROM players WHERE nickname = $1',
+                'SELECT id, nickname, passcode_hash, pokemon_clears, cleared_pokemon_ids FROM players WHERE nickname = $1',
                 [trimmedNickname]
             );
 
@@ -62,10 +62,8 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                             id: player.id, 
                             nickname: player.nickname,
                             pokemon_clears: player.pokemon_clears,
-                            capital_clears: player.capital_clears,
-                            // DBから取得したJSONをそのまま返す (JSONB型の場合、pgドライバーが自動でパースする可能性があるが、念のためJSON.parseのロジックは残す)
+                           // DBから取得したJSONをそのまま返す (JSONB型の場合、pgドライバーが自動でパースする可能性があるが、念のためJSON.parseのロジックは残す)
                             cleared_pokemon_ids: player.cleared_pokemon_ids,
-                            cleared_capital_ids: player.cleared_capital_ids
                         },
                         isNewUser: false 
                     });
@@ -77,11 +75,11 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                 // 新規登録処理 (新規ユーザー)
                 const hashedPasscode = await hashPasscode(passcode);
                 
-                // ★★★ 修正箇所: cleared_pokemon_ids, cleared_capital_ids に初期値 '[]'::jsonb を挿入 ★★★
+                // ★★★ 修正箇所: cleared_pokemon_ids に初期値 '[]'::jsonb を挿入 ★★★
                 const newPlayer = await db.query(
-                    `INSERT INTO players (nickname, passcode_hash, cleared_pokemon_ids, cleared_capital_ids) 
-                     VALUES ($1, $2, '[]'::jsonb, '[]'::jsonb) 
-                     RETURNING id, nickname, pokemon_clears, capital_clears, cleared_pokemon_ids, cleared_capital_ids`,
+                    `INSERT INTO players (nickname, passcode_hash, cleared_pokemon_ids) 
+                     VALUES ($1, $2, '[]'::jsonb) 
+                     RETURNING id, nickname, pokemon_clears, cleared_pokemon_ids`,
                     [trimmedNickname, hashedPasscode]
                 );
 
@@ -92,9 +90,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
                         id: player.id, 
                         nickname: player.nickname,
                         pokemon_clears: player.pokemon_clears,
-                        capital_clears: player.capital_clears,
-                        cleared_pokemon_ids: player.cleared_pokemon_ids,
-                        cleared_capital_ids: player.cleared_capital_ids
+                        cleared_pokemon_ids: player.cleared_pokemon_ids
                     },
                     isNewUser: true 
                 });
@@ -115,7 +111,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         try {
             const result = await db.query(
                 // プレイヤー情報取得時にクリア済みIDリストを含める
-                'SELECT id, nickname, pokemon_clears, capital_clears, cleared_pokemon_ids, cleared_capital_ids FROM players WHERE id = $1',
+                'SELECT id, nickname, pokemon_clears, cleared_pokemon_ids FROM players WHERE id = $1',
                 [req.params.id]
             );
 
@@ -139,8 +135,8 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
     app.post('/api/score/update', async (req, res) => {
         const { playerId, mode, puzzleId } = req.body;
         
-        const clearCountColumn = mode === 'pokemon' ? 'pokemon_clears' : 'capital_clears';
-        const clearedIdsColumn = mode === 'pokemon' ? 'cleared_pokemon_ids' : 'cleared_capital_ids';
+        const clearCountColumn = mode ===  'pokemon_clears';
+        const clearedIdsColumn = mode === 'cleared_pokemon_ids';
         const puzzleIdInt = parseInt(puzzleId);
 
         if (!playerId || !['pokemon', 'capital'].includes(mode) || isNaN(puzzleIdInt)) {
@@ -229,7 +225,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         // 1. プレイヤーIDがあれば、クリア済みIDを取得
         if (playerId) {
             try {
-                const clearedIdsColumn = mode === 'pokemon' ? 'cleared_pokemon_ids' : 'cleared_capital_ids';
+                const clearedIdsColumn = mode ===  'cleared_pokemon_ids' ;
                 const playerResult = await db.query(
                     `SELECT ${clearedIdsColumn} FROM players WHERE id = $1`,
                     [playerId]
@@ -277,8 +273,6 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         let column;
 
         if (type === 'pokemon') column = 'pokemon_clears';
-        else if (type === 'capital') column = 'capital_clears';
-        else if (type === 'total') column = 'pokemon_clears + capital_clears';
         else return res.status(400).json({ message: '無効なランキングタイプです。' });
 
         try {
