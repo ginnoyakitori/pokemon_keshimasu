@@ -890,6 +890,9 @@ async function fetchAndDisplayRanking(type) {
     } catch (error) {
         console.error("ランキング取得に失敗しました。", error);
         container.innerHTML = `<p style="color:red;">ランキング取得エラー: サーバーが起動しているか、ネットワーク接続を確認してください。</p>`;
+　　　　 let html = `<h3>ランキング</h3>`;
+        html += `<table class="ranking-table"><tr><th>順位</th><th>ニックネーム</th><th>クリア数</th></tr>`;
+        
     }
 }
 
