@@ -2,7 +2,7 @@
   "name": "keshimasu-server",
   "version": "1.0.0",
   "description": "ポケモンケシマスのバックエンドサーバー (Render / Neon PostgreSQL対応)",
-  "main": "server.js",
+  "main": "pokemon-keshimasu-server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
