@@ -24,8 +24,8 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
     // JSONリクエストボディの解析を有効化
     app.use(express.json());
     
-    // 静的ファイル配信 (keshimasu-clientディレクトリを想定)
-    app.use(express.static(path.join(__dirname, '..', 'keshimasu-client')));
+    // 静的ファイル配信 (pokemon-keshimasu-clientディレクトリを想定)
+    app.use(express.static(path.join(__dirname, '..', 'pokemon-keshimasu-client')));
 
 
     // --- API エンドポイント ---
