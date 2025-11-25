@@ -1,5 +1,5 @@
 // keshimasu-server/utils/auth.js
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const SALT_ROUNDS = 10; // セキュリティと速度のバランスを考慮した値
 
