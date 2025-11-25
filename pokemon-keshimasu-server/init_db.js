@@ -3,7 +3,7 @@
 
 const db = require('./db');
 // 初期パズルのデータ構造が { id: 1, data: [...], creator: "..." } であることを前提とする
-const COUNTRY_PUZZLES = require('./data/country_puzzles.json');
+const POKEMON_PUZZLES = require('./data/pokemon_puzzles.json');
 const CAPITAL_PUZZLES = require('./data/capital_puzzles.json');
 
 /**
@@ -12,15 +12,15 @@ const CAPITAL_PUZZLES = require('./data/capital_puzzles.json');
 async function initializeDatabase() {
     try {
         // --- 1. players テーブルの定義 ---
-        // ★★★ 修正箇所: cleared_country_ids と cleared_capital_ids を追加 ★★★
+        // ★★★ 修正箇所: cleared_pokemon_ids と cleared_capital_ids を追加 ★★★
         const createPlayersTable = `
             CREATE TABLE IF NOT EXISTS players (
                 id SERIAL PRIMARY KEY,
                 nickname VARCHAR(10) UNIQUE NOT NULL,
                 passcode_hash TEXT NOT NULL,
-                country_clears INTEGER DEFAULT 0,
+                pokemon_clears INTEGER DEFAULT 0,
                 capital_clears INTEGER DEFAULT 0, -- 前回のご報告のbigintではなく、他のclearsと合わせてINTEGERに統一
-                cleared_country_ids JSONB DEFAULT '[]'::jsonb, -- クリア済みパズルIDを格納 (JSONB型推奨)
+                cleared_pokemon_ids JSONB DEFAULT '[]'::jsonb, -- クリア済みパズルIDを格納 (JSONB型推奨)
                 cleared_capital_ids JSONB DEFAULT '[]'::jsonb,  -- クリア済みパズルIDを格納 (JSONB型推奨)
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
@@ -32,7 +32,7 @@ async function initializeDatabase() {
         const createPuzzlesTable = `
             CREATE TABLE IF NOT EXISTS puzzles (
                 id SERIAL PRIMARY KEY,
-                mode VARCHAR(10) NOT NULL CHECK (mode IN ('country', 'capital')),
+                mode VARCHAR(10) NOT NULL CHECK (mode IN ('pokemon', 'capital')),
                 board_data JSONB NOT NULL,
                 creator VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -49,8 +49,8 @@ async function initializeDatabase() {
             console.log('ℹ️ Initializing puzzles...');
 
             // DBの列名 'board_data' にパズルデータの 'data' を正しくマッピングする
-            const countryPuzzles = COUNTRY_PUZZLES.map(p => ({ 
-                mode: 'country', 
+            const pokemonPuzzles = POKEMON_PUZZLES.map(p => ({ 
+                mode: 'pokemon', 
                 board_data: p.data, 
                 creator: p.creator 
             }));
@@ -60,7 +60,7 @@ async function initializeDatabase() {
                 creator: p.creator 
             }));
 
-            const allInitialPuzzles = [...countryPuzzles, ...capitalPuzzles];
+            const allInitialPuzzles = [...pokemonPuzzles, ...capitalPuzzles];
             
             for (const puzzle of allInitialPuzzles) {
                 // JSON.stringify() で明示的に文字列化する
