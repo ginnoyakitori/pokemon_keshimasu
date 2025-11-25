@@ -139,7 +139,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         const clearedIdsColumn = mode === 'cleared_pokemon_ids';
         const puzzleIdInt = parseInt(puzzleId);
 
-        if (!playerId || !['pokemon', 'capital'].includes(mode) || isNaN(puzzleIdInt)) {
+        if (!playerId || !['pokemon'].includes(mode) || isNaN(puzzleIdInt)) {
             return res.status(400).json({ message: '無効なリクエストです。' });
         }
         
@@ -215,7 +215,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         const { mode } = req.params;
         const { playerId } = req.query; // playerIdをクエリパラメータから取得
         
-        if (!['pokemon', 'capital'].includes(mode)) {
+        if (!['pokemon'].includes(mode)) {
             return res.status(400).json({ message: '無効なモードです。' });
         }
         
@@ -303,9 +303,7 @@ const POKEMON_WORDS = require('./data/pokemon_words.json');
         const { mode } = req.params;
         if (mode === 'pokemon') {
             return res.json(POKEMON_WORDS);
-        } else if (mode === 'capital') {
-            return res.json(CAPITAL_WORDS);
-        }
+        } 
         return res.status(400).json({ message: '無効なモードです。' });
     });
 
