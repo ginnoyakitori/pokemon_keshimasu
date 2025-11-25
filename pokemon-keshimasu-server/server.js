@@ -13,8 +13,6 @@ const PORT = process.env.PORT || 3000;
 
 // 辞書データを読み込む (ファイルパスは適宜調整してください)
 const POKEMON_WORDS = require('./data/pokemon_words.json');
-const CAPITAL_WORDS = require('./data/capital_words.json');
-
 
 // --- 初期化と起動 ---
 (async () => {
