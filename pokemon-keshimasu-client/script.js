@@ -358,7 +358,7 @@ function startGame(isPokemon, isCreation) {
             .filter(puzzle => !clearedIds.has(puzzle.id));
 
         if (availablePuzzles.length === 0) {
-            alert(`🎉 ${isPokemon ? '国名' : '首都名'}ケシマスのすべての問題をクリアしました！`);
+            alert(`🎉 ポケモンケシマスのすべての問題をクリアしました！`);
             showScreen('home');
             return;
         }
@@ -652,7 +652,7 @@ eraseButton.addEventListener('click', async () => {
     let selectedWord = selectedWordChars.join(''); 
     let finalWord = ''; 
 
-    const mode = isPokemonMode ? '国名' : '首都名';
+    const mode = 'ポケモン' ;
     
     if (selectedWord.includes('F')) {
         let tempWordChars = [...selectedWordChars]; 
@@ -867,7 +867,7 @@ async function fetchAndDisplayRanking(type) {
     container.innerHTML = `<div>${type}ランキングをサーバーから取得中...</div>`;
 
     const totalScore = playerStats.pokemon_clears;
-    document.getElementById('ranking-nickname-display').innerHTML = `あなたの記録: <strong>${currentPlayerNickname}</strong> (国名: ${playerStats.pokemon_clears}, `;
+    document.getElementById('ranking-nickname-display').innerHTML = `あなたの記録: <strong>${currentPlayerNickname}</strong> (ポケモン: ${playerStats.pokemon_clears}), `;
 
     try {
         const response = await fetch(`${API_BASE_URL}/rankings/${type}`);
@@ -876,8 +876,6 @@ async function fetchAndDisplayRanking(type) {
 
         const rankings = await response.json();
         
-        let html = `<h3>${type === 'total' ? '総合' : type === 'pokemon' ? '国名' : '首都名'}ランキング</h3>`;
-        html += `<table class="ranking-table"><tr><th>順位</th><th>ニックネーム</th><th>クリア数</th></tr>`;
         
         rankings.forEach(item => {
             const isCurrentPlayer = item.nickname === currentPlayerNickname;
