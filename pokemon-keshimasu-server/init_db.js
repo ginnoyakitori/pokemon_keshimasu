@@ -54,7 +54,6 @@ async function initializeDatabase() {
                 creator: p.creator 
             }));
           
-            const allInitialPuzzles = [...pokemonPuzzles, ...capitalPuzzles];
             
             for (const puzzle of allInitialPuzzles) {
                 // JSON.stringify() で明示的に文字列化する

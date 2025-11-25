@@ -10,7 +10,6 @@ const API_BASE_URL = 'https://pokemon-keshimasu.onrender.com/api';
 // allPuzzlesにはサーバーレスポンス全体（{puzzles: [], cleared_ids: [], ...}）を格納する
 let allPuzzles = { pokemon: {}, capital: {} }; 
 let POKEMON_DICT = [];
-let CAPITAL_DICT = []; 
 let boardData = []; 
 let initialPlayData = []; 
 let selectedCells = []; 
@@ -28,7 +27,6 @@ let currentPlayerId = null;
 // playerStatsを定義。ホーム画面のクリア数表示はこれを参照する
 let playerStats = { 
     pokemon_clears: 0,
-    capital_clears: 0
 };
 
 
@@ -133,8 +131,7 @@ async function loadPuzzlesAndWords() {
         if (!pokemonWordsRes.ok || !capitalWordsRes.ok) throw new Error("辞書リストの取得に失敗");
 
         POKEMON_DICT = await pokemonWordsRes.json();
-        CAPITAL_DICT = await capitalWordsRes.json();
-        
+      
         updateHomeProblemCount();
         
     } catch (error) {
@@ -167,7 +164,7 @@ async function getPlayerStatus(id) {
 
         // playerStatsを最新のクリア数で更新
         playerStats.pokemon_clears = player.pokemon_clears;
-        playerStats.capital_clears = player.capital_clears;
+      
         
         // LocalStorageをサーバーデータで上書き
         if (player.cleared_pokemon_ids) {
@@ -192,7 +189,6 @@ function setPlayerSession(playerData) {
     currentPlayerId = playerData.id; 
     // playerStatsを最新のクリア数で更新
     playerStats.pokemon_clears = playerData.pokemon_clears;
-    playerStats.capital_clears = playerData.capital_clears;
     
     localStorage.setItem('keshimasu_nickname', currentPlayerNickname);
     localStorage.setItem('player_id', currentPlayerId);
