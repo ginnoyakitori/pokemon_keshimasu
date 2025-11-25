@@ -53,12 +53,7 @@ async function initializeDatabase() {
                 board_data: p.data, 
                 creator: p.creator 
             }));
-            const capitalPuzzles = CAPITAL_PUZZLES.map(p => ({ 
-                mode: 'capital', 
-                board_data: p.data, 
-                creator: p.creator 
-            }));
-
+          
             const allInitialPuzzles = [...pokemonPuzzles, ...capitalPuzzles];
             
             for (const puzzle of allInitialPuzzles) {
