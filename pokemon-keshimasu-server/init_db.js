@@ -4,7 +4,6 @@
 const db = require('./db');
 // 初期パズルのデータ構造が { id: 1, data: [...], creator: "..." } であることを前提とする
 const POKEMON_PUZZLES = require('./data/pokemon_puzzles.json');
-const CAPITAL_PUZZLES = require('./data/capital_puzzles.json');
 
 /**
  * データベースを初期化し、必要なテーブルを作成する。
