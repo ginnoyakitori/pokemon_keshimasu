@@ -6,7 +6,7 @@ const { URL } = require('url'); // URLを解析するために追加
 const connectionString = process.env.DATABASE_URL;
 
 // =========================================================
-// ★★★ デバッグログの追加 (変更なし) ★★★
+// ★★★ デバッグログの追加 ★★★
 // =========================================================
 console.log('--- DB接続デバッグ情報 ---');
 if (!connectionString) {
@@ -35,12 +35,9 @@ console.log('---------------------------');
 // 環境変数から接続情報を取得
 const pool = new Pool({
     connectionString: connectionString,
-    // ★ 修正: NeonなどのクラウドDBはSSLが必須。ローカルでの開発時は `?sslmode=disable` を接続文字列に付けるか、
-    //         より確実に常に `rejectUnauthorized: false` を設定することを推奨。
-    ssl: {
-        // Neonを利用する場合、SSLは必須です。自己署名証明書などを拒否しない設定 (Heroku/Renderなどで一般的)
-        rejectUnauthorized: false 
-    }
+    // 本番環境（production）でのSSL接続設定
+    // Render/Neonの組み合わせでは通常 rejectUnauthorized: false が必要です
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // 接続テスト
