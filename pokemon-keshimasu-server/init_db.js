@@ -18,9 +18,9 @@ async function initializeDatabase() {
                 nickname VARCHAR(10) UNIQUE NOT NULL,
                 passcode_hash TEXT NOT NULL,
                 pokemon_clears INTEGER DEFAULT 0,
-                capital_clears INTEGER DEFAULT 0, -- 前回のご報告のbigintではなく、他のclearsと合わせてINTEGERに統一
+                -- 前回のご報告のbigintではなく、他のclearsと合わせてINTEGERに統一
                 cleared_pokemon_ids JSONB DEFAULT '[]'::jsonb, -- クリア済みパズルIDを格納 (JSONB型推奨)
-                cleared_capital_ids JSONB DEFAULT '[]'::jsonb,  -- クリア済みパズルIDを格納 (JSONB型推奨)
+                -- クリア済みパズルIDを格納 (JSONB型推奨)
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `;
@@ -31,7 +31,7 @@ async function initializeDatabase() {
         const createPuzzlesTable = `
             CREATE TABLE IF NOT EXISTS puzzles (
                 id SERIAL PRIMARY KEY,
-                mode VARCHAR(10) NOT NULL CHECK (mode IN ('pokemon', 'capital')),
+                mode VARCHAR(10) NOT NULL CHECK (mode IN ('pokemon')),
                 board_data JSONB NOT NULL,
                 creator VARCHAR(255) NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

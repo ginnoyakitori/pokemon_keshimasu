@@ -8,9 +8,8 @@ const API_BASE_URL = 'https://pokemon-keshimasu.onrender.com/api';
 
 // --- 1. 定数と初期データ ---
 // allPuzzlesにはサーバーレスポンス全体（{puzzles: [], cleared_ids: [], ...}）を格納する
-let allPuzzles = { pokemon: {}, capital: {} }; 
+let allPuzzles = { pokemon: {} }; 
 let POKEMON_DICT = [];
-let CAPITAL_DICT = []; 
 let boardData = []; 
 let initialPlayData = []; 
 let selectedCells = []; 
@@ -28,7 +27,6 @@ let currentPlayerId = null;
 // playerStatsを定義。ホーム画面のクリア数表示はこれを参照する
 let playerStats = { 
     pokemon_clears: 0,
-    capital_clears: 0
 };
 
 
@@ -103,7 +101,7 @@ function markPuzzleAsCleared(mode, puzzleId) {
  * サーバーから問題リストを動的にロードする関数
  */
 async function loadPuzzlesAndWords() {
-    const modeList = ['pokemon', 'capital'];
+    const modeList = ['pokemon'];
     const playerId = currentPlayerId;
     
     try {
@@ -128,12 +126,11 @@ async function loadPuzzlesAndWords() {
         
         // 2. 辞書データの取得
         const pokemonWordsRes = await fetch(`${API_BASE_URL}/words/pokemon`);
-        const capitalWordsRes = await fetch(`${API_BASE_URL}/words/capital`);
-
-        if (!pokemonWordsRes.ok || !capitalWordsRes.ok) throw new Error("辞書リストの取得に失敗");
+       
+        if (!pokemonWordsRes.ok) throw new Error("辞書リストの取得に失敗");
 
         POKEMON_DICT = await pokemonWordsRes.json();
-        CAPITAL_DICT = await capitalWordsRes.json();
+      
         
         updateHomeProblemCount();
         
@@ -167,17 +164,13 @@ async function getPlayerStatus(id) {
 
         // playerStatsを最新のクリア数で更新
         playerStats.pokemon_clears = player.pokemon_clears;
-        playerStats.capital_clears = player.capital_clears;
         
         // LocalStorageをサーバーデータで上書き
         if (player.cleared_pokemon_ids) {
             const pokemonKey = `cleared_puzzles_pokemon_id_${id}`;
             localStorage.setItem(pokemonKey, JSON.stringify(player.cleared_pokemon_ids));
         }
-        if (player.cleared_capital_ids) {
-            const capitalKey = `cleared_puzzles_capital_id_${id}`;
-            localStorage.setItem(capitalKey, JSON.stringify(player.cleared_capital_ids));
-        }
+        
         
         return true;
     } catch (error) {
@@ -192,7 +185,6 @@ function setPlayerSession(playerData) {
     currentPlayerId = playerData.id; 
     // playerStatsを最新のクリア数で更新
     playerStats.pokemon_clears = playerData.pokemon_clears;
-    playerStats.capital_clears = playerData.capital_clears;
     
     localStorage.setItem('keshimasu_nickname', currentPlayerNickname);
     localStorage.setItem('player_id', currentPlayerId);
@@ -298,7 +290,7 @@ async function setupPlayer() {
     // ゲストの場合の初期値設定
     if (currentPlayerNickname === 'ゲスト' || !currentPlayerNickname) {
         playerStats.pokemon_clears = getClearedPuzzles('pokemon').length;
-        playerStats.capital_clears = getClearedPuzzles('capital').length;
+    
     }
 
     if (currentPlayerId && currentPlayerNickname && currentPlayerNickname !== 'ゲスト') {
@@ -340,21 +332,20 @@ function showScreen(screenName) {
 function updateHomeProblemCount() {
     // allPuzzles.mode.puzzles が存在しない場合に備えてフォールバックを設ける
     const pokemonCount = allPuzzles.pokemon.puzzles ? allPuzzles.pokemon.puzzles.length : 0;
-    const capitalCount = allPuzzles.capital.puzzles ? allPuzzles.capital.puzzles.length : 0;
     
     // LocalStorageではなくplayerStats（サーバーの値）を参照する
     const clearedPokemonCount = playerStats.pokemon_clears;
-    const clearedCapitalCount = playerStats.capital_clears;
+   
 
     document.getElementById('pokemon-problem-count').textContent = `問題数: ${pokemonCount}問 (クリア済: ${clearedPokemonCount})`;
-    document.getElementById('capital-problem-count').textContent = `問題数: ${capitalCount}問 (クリア済: ${clearedCapitalCount})`;
+    
 }
 
 /**
  * ゲームの開始
  */
 function startGame(isPokemon, isCreation) {
-    const mode = isPokemon ? 'pokemon' : 'capital';
+    const mode =  'pokemon';
     const allProblemData = allPuzzles[mode].puzzles || []; 
     
     allProblemData.sort((a, b) => a.id - b.id);
@@ -390,12 +381,12 @@ function startGame(isPokemon, isCreation) {
 
     isPokemonMode = isPokemon;
     isCreationPlay = isCreation; 
-    currentDictionary = isPokemon ? POKEMON_DICT : CAPITAL_DICT; 
+    currentDictionary = POKEMON_DICT; 
     selectedCells = [];
     usedWords = [];
     eraseButton.disabled = true;
     
-    const modeName = isPokemon ? '国名ケシマス' : '首都名ケシマス';
+    const modeName = 'ポケモンケシマス';
     
     document.getElementById('current-game-title').textContent = modeName; 
     
@@ -513,8 +504,8 @@ async function checkGameStatus() {
     const totalChars = boardData.flat().filter(char => char !== '').length;
     
     if (totalChars === 0) {
-        const mode = isPokemonMode ? 'pokemon' : 'capital';
-        const modeName = isPokemonMode ? '国名' : '首都名';
+        const mode =  'pokemon';
+        const modeName = 'ポケモン';
         
         if (!isCreationPlay) {
             const problemDataList = allPuzzles[mode].puzzles || [];
@@ -733,7 +724,7 @@ resetBtn.addEventListener('click', () => {
         
     } else if (currentPuzzleIndex !== -1) {
         // allPuzzles[mode].puzzles を参照する
-        const problemDataList = isPokemonMode ? allPuzzles.pokemon.puzzles : allPuzzles.capital.puzzles;
+        const problemDataList = allPuzzles.pokemon.puzzles;
         const selectedPuzzle = problemDataList[currentPuzzleIndex];
         
         initialPlayData = JSON.parse(JSON.stringify(selectedPuzzle.data));
@@ -875,8 +866,8 @@ async function fetchAndDisplayRanking(type) {
     const container = document.getElementById('ranking-list-container');
     container.innerHTML = `<div>${type}ランキングをサーバーから取得中...</div>`;
 
-    const totalScore = playerStats.pokemon_clears + playerStats.capital_clears;
-    document.getElementById('ranking-nickname-display').innerHTML = `あなたの記録: <strong>${currentPlayerNickname}</strong> (国名: ${playerStats.pokemon_clears}, 首都名: ${playerStats.capital_clears}, 合計: ${totalScore})`;
+    const totalScore = playerStats.pokemon_clears;
+    document.getElementById('ranking-nickname-display').innerHTML = `あなたの記録: <strong>${currentPlayerNickname}</strong> (国名: ${playerStats.pokemon_clears}, `;
 
     try {
         const response = await fetch(`${API_BASE_URL}/rankings/${type}`);
@@ -906,7 +897,7 @@ async function fetchAndDisplayRanking(type) {
 // --- 5.5. ワードリスト表示ロジック ---
 
 function displayWordList(type) {
-    const dictionary = (type === 'pokemon') ? POKEMON_DICT : CAPITAL_DICT;
+    const dictionary = POKEMON_DICT;
     
     if (dictionary.length === 0) {
         wordListContent.innerHTML = `<p>辞書データがサーバーからロードされていません。</p>`;
@@ -977,8 +968,7 @@ if (btnGuestPlay) {
         
         // ゲストモード開始時にローカルのクリア数をplayerStatsに反映
         playerStats.pokemon_clears = getClearedPuzzles('pokemon').length; 
-        playerStats.capital_clears = getClearedPuzzles('capital').length; 
-        
+       
         alert("ゲストとしてゲームを開始します。スコアはランキングに保存されません。");
         await loadPuzzlesAndWords(); 
         showScreen('home');
@@ -999,9 +989,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 document.getElementById('btn-pokemon-mode').addEventListener('click', () => {
     startGame(true, false); 
 });
-document.getElementById('btn-capital-mode').addEventListener('click', () => {
-    startGame(false, false); 
-});
+
 document.getElementById('btn-create-mode').addEventListener('click', () => {
     if (!currentPlayerNickname || currentPlayerNickname === 'ゲスト') {
         alert("問題制作モードを利用するには、ログインしてください。");
